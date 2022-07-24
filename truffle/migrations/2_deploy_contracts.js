@@ -1,5 +1,5 @@
-var NotaryContract = artifacts.require("NotaryContract");
+var Platform = artifacts.require("Platform");
 
 module.exports = function(deployer) {
-  deployer.deploy(NotaryContract);
+  deployer.deploy(Platform);
 };

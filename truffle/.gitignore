@@ -1,0 +1,6 @@
+.env
+.secret
+.deps/*
+startup_token/node_modules/*
+myenv/*
+startup_token/build/*

@@ -57,7 +57,7 @@ contract Auctioneer is Governed {
 * @dev This is the implementation of the the auctions service.
 */
 
-contract Auctions is Auctioneer {
+contract Platform is Auctioneer {
 
   using SafeMath for uint;
 
@@ -65,8 +65,6 @@ contract Auctions is Auctioneer {
     address payable beneficiary;
     string description;
     uint deadline;
-    mapping( address => uint ) offers;
-    uint numOffers;
     uint highestBid;
     address highestBidder;
     bool completed;
@@ -76,13 +74,13 @@ contract Auctions is Auctioneer {
   mapping( uint => Auction ) public auctions_;
   string public companyName_;
 
-  mapping( uint => string) public receipts;
-  uint public numReceipts;
+  mapping( uint => string) public receipts_;
+  uint public numReceipts_ = 0;
 
   // Events
-  event NewAuctionCreated(uint indexed auctionID, address beneficiary, uint indexed deadline, uint indexed startingPrice);
-  event NewHighestBid(uint indexed auctionID, address indexed bidder, uint indexed amount);
-  event AuctionFailed(uint indexed auctionID, address indexed winner, uint indexed amount, address beneficiary);
+  event NewAuctionCreated(uint indexed auctionID, address indexed beneficiary, uint indexed deadline, uint startingPrice);
+  event NewHighestBid(uint indexed auctionID, address indexed bidder, uint amount);
+  event AuctionEnded(uint indexed auctionID, address indexed beneficiary, address indexed winner, uint amount);
 
   // Initialize variables
   constructor(string memory companyName) Auctioneer() {
@@ -90,20 +88,14 @@ contract Auctions is Auctioneer {
   }
 
   // Create a new charity auction
-  function newAuction( address payable beneficiary, string memory description, uint startingPrice, uint deadline ) external onlyAuctioneer {
+  function newAuction( address payable beneficiary, string memory description, uint startingPrice, uint deadline ) external {
     require(beneficiary != address(0), "Zero address entered");
     require(startingPrice >= 0, "Starting price has to be positive or null");
     require(deadline > 0, "Available time to bid has to be greather than zero");
 
     uint auctionID = numAuctions_++;
-    auctions_[auctionID] = Auction ({
-      beneficiary: beneficiary,
-      description: description, 
-      deadline : block.timestamp.add(deadline), 
-      numOffers: 0,
-      highestBid: startingPrice,
-      completed: false
-    });
+    // at the creation moment the highest bidder is the beneficiary itself
+    auctions_[auctionID] = Auction (beneficiary, description, block.timestamp.add(deadline), startingPrice, beneficiary, false);
     emit NewAuctionCreated(auctionID, beneficiary, deadline, startingPrice);
   }
 
@@ -111,58 +103,35 @@ contract Auctions is Auctioneer {
   function newOffer(uint auctionID) external payable {
 
     require(auctions_[auctionID].completed == false, "Auction has already ended!");
-    // require(msg.value > auctions[auctionID].highestBid, "Your bid value is lower than the highest bid");
-    require(a.deadline > 0, "AuctionID is not correct!");
+    require(auctions_[auctionID].highestBid < msg.value, "Your bid value is lower than the highest bid");
 
-    // Increase sender already offer
-    auctions[auctionID].offers[msg.sender] = auctions[auctionID].offers[msg.sender].add(msg.value);
-    auctions[auctionID].numOffers++;
-
-    if(auctions[auctionID].highestBid < msg.value){
-      auctions[auctionID].highestBid = msg.value;
-      auctions[auctionID].highestBidder = msg.sender;
-      emit HighestBidIncreased(auctionID, msg.sender, msg.value);
-    }
-    else{
-      payable(address(msg.sender)).transfer(msg.value);
-    }
+    auctions_[auctionID].highestBid = msg.value;
+    auctions_[auctionID].highestBidder = msg.sender;
+    emit NewHighestBid(auctionID, msg.sender, msg.value);
   }
 
-    
+  // End an auction, transfer the highest bid to beneficiary and store hash of json receipt, only auctioneers
+  function auctionEnd(uint auctionID, string memory hash) external {
 
-  /**
-    * @dev End an auction, transfer the highest bid to beneficiary and store hash of json receipt, only auctioneers
-    * @param auctionID ID associated with the auction
-    * @param hash string of json auction receipt
-    */
-  function auctionEnd(uint auctionID, string memory hash) external onlyAuctioneer{
+    // Checks
+    require(bytes(hash).length != 0, "Hash string not passed");
+    // require(block.timestamp > auctions_[auctionID].deadline, "Auction has not reached its deadline yet");
+    require(auctions_[auctionID].completed == false, "Auction has been already completed");
 
-      // Checks
-      Auction storage a = auctions[auctionID];
-      require(a.deadline > 0, "AuctionID is not correct!");
-      require(bytes(hash).length != 0, "Hash string not passed");
-      require(block.timestamp > a.deadline, "Auction has not reached its deadline yet");
-      require(a.completed == false, "Auction has been already completed");
+    // Transfer
+    auctions_[auctionID].completed = true;
+    auctions_[auctionID].beneficiary.transfer(auctions_[auctionID].highestBid);
 
+    // Store hash
+    receipts_[auctionID] = hash;
+    numReceipts_++;
 
-      // Effects
-      a.completed = true;
-      uint amount = a.highestBid;
-      a.highestBid = 0;
-
-      // Interaction
-      a.beneficiary.transfer(amount);
-
-      // Store hash
-      receipts[auctionID] = hash;
-      numReceipts++;
-
-      emit AuctionEnded(auctionID, a.highestBidder, amount, a.beneficiary);
+    emit AuctionEnded(auctionID, auctions_[auctionID].beneficiary, auctions_[auctionID].highestBidder, auctions_[auctionID].highestBid);
   }
 
-    // We have to create our own getter
-  function getTitleDeed(uint auctionID) public view returns (Auction memory) {
-    return acts_[auctionID];
+  // We have to create our own getter
+  function getAuction(uint auctionID) public view returns (Auction memory) {
+    return auctions_[auctionID];
   }
 
 }

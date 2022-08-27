@@ -1,10 +1,7 @@
-// This function detects most providers injected at window.ethereum
-// import detectEthereumProvider from '@metamask/detect-provider';
 
 // Handle button
 const sendRequestButton = document.getElementById('sendRequestButton');
-const connectButton = document.getElementById('connectButton', connect);
-connectButton.addEventListener('click', connect);
+const connectButton = document.getElementById('connectButton');
 
 // Handle events
 ethereum.on('accountsChanged', handleAccountsChanged);
@@ -22,12 +19,12 @@ async function init() {
   // this returns the provider, or null if it wasn't detected
   const provider = await detectEthereumProvider();
   if (provider) {
-    console.log('Ethereum successfully detected!')
-    startApp(provider);  // Initialize your app
+    // Initialize your app
+    startApp(provider);
   } else {
-    console.error('MetaMask is not installed');
-    connectButton.innerText = 'Metamask is not available';
-    connectButton.disabled = true;
+    // if something wrong also show a msg to user.
+    deactivateConnection("MetaMask is not installed");
+    alert('MetaMask is not installed');
   }
 }
 
@@ -36,16 +33,16 @@ async function startApp(provider) {
   // If the provider returned by detectEthereumProvider is not the same as
   // window.ethereum, something is overwriting it, perhaps another wallet.
   if (provider !== window.ethereum) {
-    console.error('Do you have multiple wallets installed?');
-    connectButton.innerText = 'Metamask is not available';
-    connectButton.disabled = true;
+    deactivateConnection("Use a single wallet to access the page properly");
     alert('Use a single wallet to access the page properly');
   }
-  else 
+  else {
+    activateConnection("Ethereum successfully detected!");
     console.log('Only one wallet: ok!');
+  }
 }
 
-// You should only attempt to request the user's accounts in response to user interaction
+// Try to connect in response to user interaction only
 function connect() {
   console.log("Connecting...");
   ethereum
@@ -53,39 +50,77 @@ function connect() {
     .then(handleAccountsChanged)
     .catch((err) => {
       if (err.code === 4001) {
-        // EIP-1193 userRejectedRequest error
-        // If this happens, the user rejected the connection request.
-        console.log('Please connect to MetaMask.');
+        console.log("The user rejected the connection request.");
       } else {
         console.error(err);
       }
     });
 }
 
+// Handle the new accounts, or lack thereof.
+// "accounts" will always be an array, but it can be empty.
 function handleAccountsChanged(accounts) {
   if (accounts.length === 0) {
-    console.log('Please connect to MetaMask.');
     alert('Please connect to MetaMask.');
     location.reload();
   } else {
     // Set current account
     console.log("Setting account...");
     currentAccount = accounts[0];
-    console.log(currentAccount);
-    sendRequestButton.disabled = false;
+    deactivateConnection("Deactivating connection button.");
+    activateRequest("");
+    
     // write on json for python
-    const dict_values = {currentAccount};
-    const s = JSON.stringify(dict_values);
-    console.log(s);
-    window.alert(s);
-    $.ajax({
-      url:"/test",
-      type:"POST",
-      contentType: "application/json",
-      data: JSON.stringify(s)
-    });
-    location.reload();
+    sendUserToPython(currentAccount);
+    // location.reload();
   }
+}
+
+function sendUserToPython(account){
+  const dict_values = {account}
+  const s = JSON.stringify(dict_values)
+  console.log(s)
+  window.alert(s)
+  $.ajax({
+    url:'/test',
+    type:'POST',
+    contentType: "application/json",
+    data: s,
+    success: function(data){
+      //this gets called when server returns an OK response
+      console.log('it worked!');
+      // console.log(data.result);
+    },
+    error: function(){console.log("it didnt work");}
+  });
+}
+
+function deactivateConnection(message){
+  connectButton.removeEventListener('click', connect);
+  connectButton.disabled = true;
+  console.log(message);
+}
+
+function activateConnection(message){
+  connectButton.addEventListener('click', connect);
+  connectButton.disabled = false;
+  console.log(message);
+}
+
+function deactivateRequest(message){
+  connectButton.addEventListener('click', sendRequest);
+  connectButton.disabled = true;
+  console.log(message);
+}
+
+function activateRequest(message){
+  connectButton.removeEventListener('click', sendRequest);
+  connectButton.disabled = true;
+  console.log(message);
+}
+
+function sendRequest(){
+  console.log("Sending...");
 }
 
 // Remove event listener

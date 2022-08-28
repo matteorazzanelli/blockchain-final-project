@@ -57,22 +57,22 @@ function connect() {
     });
 }
 
-// Handle the new accounts, or lack thereof.
-// "accounts" will always be an array, but it can be empty.
+// Handle new accounts; "accounts" will always be an array, but it can be empty.
 function handleAccountsChanged(accounts) {
   if (accounts.length === 0) {
     alert('Please connect to MetaMask.');
-    location.reload();
-  } else {
+  } else if (accounts[0] !== currentAccount) {
     // Set current account
     console.log("Setting account...");
     currentAccount = accounts[0];
-    deactivateConnection("Deactivating connection button.");
-    activateRequest("");
-    
+    deactivateConnection("Deactivating connection button.");    
     // write on json for python
     sendUserToPython(currentAccount);
-    // location.reload();
+  }
+  else{
+    // you are already conected and account is the same as before
+    console.log("do nothing");
+    // or there is an error
   }
 }
 
@@ -89,9 +89,13 @@ function sendUserToPython(account){
     success: function(data){
       //this gets called when server returns an OK response
       console.log('it worked!');
-      // console.log(data.result);
+      activateRequest("You can now sending eth requests");
+      // location.reload();
     },
-    error: function(){console.log("it didnt work");}
+    error: function(){
+      console.log("it didnt work");
+      deactivateRequest("Access to send request removed.");
+    }
   });
 }
 
@@ -108,14 +112,14 @@ function activateConnection(message){
 }
 
 function deactivateRequest(message){
-  connectButton.addEventListener('click', sendRequest);
-  connectButton.disabled = true;
+  sendRequestButton.removeEventListener('click', sendRequest);
+  sendRequestButton.disabled = true;
   console.log(message);
 }
 
 function activateRequest(message){
-  connectButton.removeEventListener('click', sendRequest);
-  connectButton.disabled = true;
+  sendRequestButton.addEventListener('click', sendRequest);
+  sendRequestButton.disabled = false;
   console.log(message);
 }
 

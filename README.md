@@ -11,7 +11,7 @@
     The bets are handled by using a no-relational databse (i.e. Redis).
     When an auction ends, the results are stored in:
   </p>
-  <p>
+  <p align="left">
     <ul>
       <li>a relational database (i.e. sqlite)</li>
       <li>in a JSON</li>

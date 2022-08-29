@@ -16,7 +16,7 @@ else:
 from web3 import Web3
 w3 = Web3(Web3.HTTPProvider(blockchain_address))
 
-# retrieve contract vars and create contract instance
+# retrieve contract vars
 import json
 deployed_contract_address = ''
 compiled_contract_path = 'truffle/build/Platform.json'
@@ -24,10 +24,10 @@ with open(compiled_contract_path) as file:
   contract_json = json.load(file)  # load contract info as JSON
   contract_abi = contract_json['abi']  # fetch contract's abi - necessary to call its functions
 
-# Fetch deployed contract reference
+# create contract instance
 contract = w3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 
-################################# Fetch deployed conract
+################################# Methods
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse

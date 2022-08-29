@@ -76,6 +76,7 @@ function handleAccountsChanged(accounts) {
   }
 }
 
+// Make an ajax request to send param from js to python
 function sendUserToPython(account){
   const dict_values = {account}
   const s = JSON.stringify(dict_values)
@@ -89,7 +90,7 @@ function sendUserToPython(account){
     success: function(data){
       //this gets called when server returns an OK response
       console.log('it worked!');
-      activateRequest("You can now sending eth requests");
+      activateRequest("You can now send eth requests");
       // location.reload();
     },
     error: function(){
@@ -99,6 +100,7 @@ function sendUserToPython(account){
   });
 }
 
+// Utility functions
 function deactivateConnection(message){
   connectButton.removeEventListener('click', connect);
   connectButton.disabled = true;

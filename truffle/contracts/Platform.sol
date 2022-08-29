@@ -88,7 +88,8 @@ contract Platform is Auctioneer {
   }
 
   // Create a new charity auction
-  function newAuction( address payable beneficiary, string memory description, uint startingPrice, uint deadline ) external {
+  function newAuction( address payable beneficiary, string memory description, 
+  uint startingPrice, uint deadline ) external {
     require(beneficiary != address(0), "Zero address entered");
     require(startingPrice >= 0, "Starting price has to be positive or null");
     require(deadline > 0, "Available time to bid has to be greather than zero");
@@ -110,7 +111,7 @@ contract Platform is Auctioneer {
     emit NewHighestBid(auctionID, msg.sender, msg.value);
   }
 
-  // End an auction, transfer the highest bid to beneficiary and store hash of json receipt, only auctioneers
+  // End an auction, transfer the highest bid to beneficiary and store hash of json receipt
   function auctionEnd(uint auctionID, string memory hash) external {
 
     // Checks

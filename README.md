@@ -7,13 +7,15 @@
 
   <h1 align="center">Demo auctions platform</h1>
   <p align="center">
-    This demo platform allows users to make a bid on one or more not completed auctions on limited edition shoes.
+    This demo platform allows users to make a bid on one or more not completed auctions on limited edition eco-shoes.
     The bets are handled by using a no-relational databse (i.e. Redis).
     When an auction ends, the results are stored in:
+  </p>
+  <p>
     <ul>
       <li>a relational database (i.e. sqlite)</li>
       <li>in a JSON</li>
-      <li>on the Ethereum blockchain</li>
+      <li>on the Ethereum blockchain (Ganache)</li>
     </ul>
   </p>
 </div>
@@ -33,9 +35,11 @@
 
 ### Tools
 * [Ganache](https://trufflesuite.com/ganache/)
+* [MetaMask](https://metamask.io/)
+
+### Important libs
 * [Web3.py](https://web3py.readthedocs.io/en/stable/)
 * [Web3.js](https://web3js.readthedocs.io/en/v1.7.5/)
-* [MetaMask](https://metamask.io/)
 
 ## Getting Started
 1. Clone the repo
@@ -51,7 +55,7 @@
   ```sh
   sudo service redis-server restart
   ```
-5. Install [MetaMask](https://metamask.io/) as a CHrome extension
+5. Install [MetaMask](https://metamask.io/) as a Chrome extension
 6. Open a shell and go to your smart contract folder (deploy the contract on your local blockchain, see truffle-config.js for details)
   ```sh
   truffle compile

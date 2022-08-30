@@ -30,12 +30,25 @@
       </div>
     </nav>
     
-    {% comment %} Show the request button only if authenticated
-    It will be on gray background if metamsk not activated {% endcomment %}
+    {% comment %} Show the request button only if authenticated {% endcomment %}
     {% if user.is_authenticated %}
-          
-    <button id="sendRequestButton" class="action-btn">Send request</button>
-    <button  id="connectButton" class="connect-btn">Connect To MetaMask</button>
+
+      <h1>Instructions</h1>
+      <ul>
+        <li>Connect to MetaMask before sending requests</li>
+        <li>They will be not accept otherwise</li>
+        <li>Type is the first checked variable</li>
+        <li>Amount is in ETH</li>
+        <li>Minimum amount is 0 ETH</li>
+      </ul>
+
+      <button  id="connectButton" class="connect-btn">Connect To MetaMask</button>
+      <form id="auction_form" method="post" class="post-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+      </form>
+      <button type='submit' id="sendRequestButton" class="action-btn">Send request</button>
+      
 
     {% else %}
 
@@ -43,14 +56,4 @@
 
     {% endif %}
 
-    
-
-     <!--CTA-->
-     {% comment %} {% if user.is_authenticated %}
-     <p>Hi {{user}}, take a look at our Charity Auctions.</p>
-     <a class="btn" href="{% url 'auctionsList' %}"><i class="fa fa-shopping-cart"></i>See Auctions</a>
-     {% else %}
-     <p>Take a look at our Charity Auctions.</p>
-     <a class="btn" href="{% url 'login' %}"><i class="fa fa-shopping-cart"></i>Login To Participate In Auctions</a>
-     {% endif %} {% endcomment %}
   {% endblock %}

@@ -32,23 +32,56 @@ contract = w3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 import json
+from .forms import AuctionForm
 
-def homepage(request):
-  return render(request, 'app/home.html')
+# def homepage(request):
+#   return render(request, 'app/home.html')
 
 # the following decorator allows to avoid 403 forbidden error since post methods is unsafe
 from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
 def test(request):
   try:
-    print('-------------------------')
+    # save account in redis db
     result = json.loads(request.body)
-    print(result)
-    print(type(result))
-    print(result['account'])
-    print(type(result['account']))
-    print('-------------------------')
     client.set("account", result['account'])
+    # print(type(client.get("account").decode("utf-8") ))
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': result['account']})
+
+###############################################################
+def get_pending_auctions():
+  # for filter in filters:
+  #   for event in filter.get_new_entries():
+  #     # update records in db
+  #     record = Event.objects.filter(type=event['event']).first()
+  #     if record is not None:
+  #       record.times += 1
+  #       record.date = datetime.now()
+  #       record.save()
+  # # db is updated, now retrieve info we need
+  output = []
+  # for event in events:
+  #   record = Event.objects.filter(type=event).first()
+  #   output.append({'type':record.type, 'times':record.times, 'date':record.date})
+  return output
+
+###############################################################
+def homepage(request):
+  print('################## PYTHON ###################')
+  form = AuctionForm()
+  #if there is an incoming submitted form
+  # if request.method == "POST":
+  #   print('avevo ragione')
+  #   form = AuctionForm(request.POST)
+  #   if form.is_valid():
+  #     processForm(form, request)
+  #     return redirect('app:homepage')
+  
+  pending_auctions = get_pending_auctions()
+  context = {
+    "pending_auctions": pending_auctions,
+    "form": form
+  }
+  return render(request=request, template_name='app/home.html', context=context)

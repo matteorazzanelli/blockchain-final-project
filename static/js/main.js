@@ -127,6 +127,15 @@ function activateRequest(message){
 
 function sendRequest(){
   console.log("Sending...");
+  const form = document.getElementById('auction_form');
+  const type = form.elements['type'].value;
+  const id = form.elements['id'].value;
+  const description = form.elements['description'].value;
+  const amount = form.elements['amount'].value;
+  console.log(type);
+  console.log(id);
+  console.log(description);
+  console.log(amount);
 }
 
 // Remove event listener

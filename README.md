@@ -11,6 +11,7 @@
     The bets are handled by using a no-relational databse (i.e. Redis).
     When an auction ends, the results are stored in:
   </p>
+  </div>
   <p align="left">
     <ul>
       <li>a relational database (i.e. sqlite)</li>
@@ -18,7 +19,6 @@
       <li>on the Ethereum blockchain (Ganache)</li>
     </ul>
   </p>
-</div>
 
 ### Languages
 * [Solidity](https://docs.soliditylang.org/en/v0.8.11/)

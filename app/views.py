@@ -61,34 +61,55 @@ def test(request):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': result['account']})
 
+@csrf_exempt
+def new(request):
+  try:
+    # save account in redis db
+    result = json.loads(request.body)
+    print(request)
+    # client.set("account", result['account'])
+    # print(type(client.get("account").decode("utf-8") ))
+  except (ValueError, KeyError):
+    raise ValueError('Invalid POST parameters')
+  return JsonResponse({'result': 'ok'})
+
+@csrf_exempt
+def contribute(request):
+  try:
+    # save account in redis db
+    result = json.loads(request.body)
+    print(request)
+    # client.set("account", result['account'])
+    # print(type(client.get("account").decode("utf-8") ))
+  except (ValueError, KeyError):
+    raise ValueError('Invalid POST parameters')
+  return JsonResponse({'result': 'ok'})
+
 ###############################################################
 def get_pending_auctions():
-  # for filter in filters:
-  #   for event in filter.get_new_entries():
-  #     # update records in db
-  #     record = Event.objects.filter(type=event['event']).first()
+  # acts = []
+  # # check if contract has been completed, and eventually make its status to 'closed'
+  # # closed contracts are not shown
+  # num_of_contracts = contract.functions.numContract_().call()
+  # for i in range(num_of_contracts):
+  #   t = contract.functions.getTitleDeed(i).call()
+  #   if t[6] is True:
+  #     record = NotaryModelForm.objects.filter(id=i).first()
   #     if record is not None:
-  #       record.times += 1
-  #       record.date = datetime.now()
-  #       record.save()
-  # # db is updated, now retrieve info we need
+  #       record.status = 'closed' # todo: this is redundant for already closed contracts
+  #   else:
+  #     acts.append({'id': i, 'buyer':t[0], 'seller':t[1], 'description':t[2],
+  #                'amount': t[3], 'amount_for_now': t[4],
+  #                'deadline':round((t[5]-time.time())/(7*24*3600))})
+  # return acts
+
   output = []
-  # for event in events:
-  #   record = Event.objects.filter(type=event).first()
-  #   output.append({'type':record.type, 'times':record.times, 'date':record.date})
   return output
 
 ###############################################################
 def homepage(request):
   print('################## PYTHON ###################')
   form = AuctionForm()
-  #if there is an incoming submitted form
-  # if request.method == "POST":
-  #   print('avevo ragione')
-  #   form = AuctionForm(request.POST)
-  #   if form.is_valid():
-  #     processForm(form, request)
-  #     return redirect('app:homepage')
   
   pending_auctions = get_pending_auctions()
   context = {

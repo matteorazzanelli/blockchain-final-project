@@ -91,7 +91,6 @@ function sendUserToPython(account){
       //this gets called when server returns an OK response
       console.log('it worked!');
       activateRequest("You can now send eth requests");
-      // location.reload();
     },
     error: function(){
       console.log("it didnt work");
@@ -132,10 +131,33 @@ function sendRequest(){
   const id = form.elements['id'].value;
   const description = form.elements['description'].value;
   const amount = form.elements['amount'].value;
-  console.log(type);
-  console.log(id);
-  console.log(description);
-  console.log(amount);
+  // prepare dictionary
+  const dict_values = {id, description, amount}
+  const s = JSON.stringify(dict_values)
+  // handle only new and contribute operations
+  if(type=='new' || type=='contribute'){
+    makeAJAXRequest(s, type)
+  }
+}
+
+function makeAJAXRequest(s, type){
+  // since type is already a string, use it
+  // to call the python function in views.py
+  $.ajax({
+    url:type,
+    type:'POST',
+    contentType: "application/json",
+    data: s,
+    success: function(data){
+      //this gets called when server returns an OK response
+      console.log('it worked!');
+      activateRequest("You can now send eth requests");
+    },
+    error: function(){
+      console.log("it didnt work");
+      deactivateRequest("Access to send request removed.");
+    }
+  });
 }
 
 // Remove event listener

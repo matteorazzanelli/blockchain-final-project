@@ -56,4 +56,28 @@
 
     {% endif %}
 
+    <h2>THESE ARE OUR OPEN AUCTIONS ON THE LIMITED EDITIONS ECO-SHOES</h2>
+    <table class="table p-4 bg-white shadow rounded-lg">
+      <thead>
+        <tr>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> ID </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Buyer </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Seller </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Description </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Amount </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> For now </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Deadline (in weeks) </th>
+        </tr>
+      </thead>
+      {% comment %} <tbody> {% for order in list_of_contracts %} <tr class="text-gray-700">
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.id}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.buyer}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.seller}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.description}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.amount}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.amount_for_now}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.deadline}} </td>
+        </tr> {% endfor %} </tbody> {% endcomment %}
+    </table>
+
   {% endblock %}

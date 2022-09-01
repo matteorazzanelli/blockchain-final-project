@@ -1,6 +1,12 @@
 ################################# Connect to redis server
 import redis
-client = redis.StrictRedis(host='127.0.0.1', port=6379, password='',db=0)
+redis_host = '127.0.0.1'
+client = redis.StrictRedis(host=redis_host, port=6379, password='',db=0)
+try:
+  client.client_list()
+except redis.ConnectionError:
+  ValueError('CONNECTION TO REDIS SERVER FAILED.')
+print('connected to redis "{}"'.format(redis_host)) 
 
 ################################# Fetch deployed conract
 import sys
@@ -15,10 +21,18 @@ else:
 
 from web3 import Web3
 w3 = Web3(Web3.HTTPProvider(blockchain_address))
+if not w3.isConnected():
+  print('BLOCKCHAIN NOT CONNECTED.')
+else:
+  print('CONNECTION TO WEB3 OK')
 
 # retrieve contract vars
 import json
 deployed_contract_address = ''
+if not w3.isAddress(deployed_contract_address):
+  print('CONTRACT ADDRESS NOT VALID')
+else:
+  print('CONTRACT ADDRESS OK')
 compiled_contract_path = 'truffle/build/Platform.json'
 with open(compiled_contract_path) as file:
   contract_json = json.load(file)  # load contract info as JSON
@@ -33,9 +47,6 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 import json
 from .forms import AuctionForm
-
-# def homepage(request):
-#   return render(request, 'app/home.html')
 
 # the following decorator allows to avoid 403 forbidden error since post methods is unsafe
 from django.views.decorators.csrf import csrf_exempt

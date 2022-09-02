@@ -37,9 +37,11 @@
       <ul>
         <li>Connect to MetaMask before sending requests</li>
         <li>They will be not accept otherwise</li>
-        <li>Type is the first checked variable</li>
+        <li>Type is the first checked variable to distinguish which operation</li>
         <li>Amount is in ETH</li>
         <li>Minimum amount is 0 ETH</li>
+        <li>If type is new, amount is the strating price</li>
+        <li>If type is contribute, amount is the offer</li>
       </ul>
 
       <button  id="connectButton" class="connect-btn">Connect To MetaMask</button>
@@ -61,10 +63,9 @@
       <thead>
         <tr>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> ID </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Buyer </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Seller </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Beneficiary </th>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Description </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Amount </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Starting price </th>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> For now </th>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Deadline (in weeks) </th>
         </tr>

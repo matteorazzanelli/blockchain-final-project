@@ -56,6 +56,8 @@ w3.eth.default_account = '' # client.get("account").decode("utf-8")
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 import json
+import time
+from pprint import pprint
 from .forms import AuctionForm
 
 # the following decorator allows to avoid 403 forbidden error since post methods is unsafe
@@ -63,10 +65,11 @@ from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
 def test(request):
   try:
-    # save account in redis db
+    # save account in redis db for history purpose
     result = json.loads(request.body)
     client.set("account", result['account'])
-    # print(type(client.get("account").decode("utf-8") ))
+    # update default account
+    w3.eth.default_account = result['account']
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': result['account']})
@@ -74,11 +77,24 @@ def test(request):
 @csrf_exempt
 def new(request):
   try:
-    # save account in redis db
     result = json.loads(request.body)
-    print(request)
-    # client.set("account", result['account'])
-    # print(type(client.get("account").decode("utf-8") ))
+    if not (w3.eth.default_account==result['currentAccount']):
+      sys.exit('Account is not equal to the last stored: exiting...')
+    if result['amount'] <= 0:
+      return JsonResponse({'result': 'Amount must be greater than 0.'})
+    # vars are ok
+    now = int(time.time()) # unix epoch
+    deadline = now + 24*3600
+    print(w3.eth.default_account, w3.eth.get_balance(w3.eth.default_account))
+    new_contract_txn = contract.functions.newAuction(
+      w3.eth.default_account, result['description'], result['amount'], deadline).buildTransaction({
+      'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
+      'gasPrice': w3.eth.gas_price,
+      'chainId': chain_id
+    })
+    tx_receipt = w3.eth.send_transaction(new_contract_txn)
+    print('Transaction receipt for new contract method:')
+    pprint(dict(tx_receipt))
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': 'ok'})
@@ -88,9 +104,20 @@ def contribute(request):
   try:
     # save account in redis db
     result = json.loads(request.body)
-    print(request)
-    # client.set("account", result['account'])
-    # print(type(client.get("account").decode("utf-8") ))
+    amount = Web3.toWei(result['amount'], 'ether')
+    t = contract.functions.getAuction(result['id']).call()
+    print(id, amount, t)
+    if (t[5] is True): 
+      return JsonResponse({'result': 'Auction already closed.'})
+    new_contribution_txn = contract.functions.newOffer(result['id']).buildTransaction({
+      'value': amount,
+      'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
+      'gasPrice': w3.eth.gas_price,
+      'chainId': chain_id
+    })
+    tx_receipt = w3.eth.send_transaction(new_contribution_txn)
+    print('Transaction receipt for new contract method:')
+    pprint(dict(tx_receipt))
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': 'ok'})

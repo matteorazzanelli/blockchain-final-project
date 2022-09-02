@@ -132,9 +132,9 @@ function sendRequest(){
   const description = form.elements['description'].value;
   const amount = form.elements['amount'].value;
   // prepare dictionary
-  const dict_values = {id, description, amount}
+  const dict_values = {id, description, amount, currentAccount}
   const s = JSON.stringify(dict_values)
-  // handle only new and contribute operations
+  // handle only feasible operations
   if(type=='new' || type=='contribute'){
     makeAJAXRequest(s, type)
   }
@@ -151,11 +151,9 @@ function makeAJAXRequest(s, type){
     success: function(data){
       //this gets called when server returns an OK response
       console.log('it worked!');
-      activateRequest("You can now send eth requests");
     },
     error: function(){
       console.log("it didnt work");
-      deactivateRequest("Access to send request removed.");
     }
   });
 }

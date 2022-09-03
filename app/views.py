@@ -107,12 +107,13 @@ def contribute(request):
   try:
     # save account in redis db
     result = json.loads(request.body)
-    amount = Web3.toWei(result['amount'], 'ether')
-    t = contract.functions.getAuction(result['id']).call()
+    amount = Web3.toWei(int(result['amount']), 'ether')
+    id = int(result['id'])
+    t = contract.functions.getAuction(id).call()
     print(id, amount, t)
-    if (t[5] is True): 
+    if t[5] is True: 
       return JsonResponse({'result': 'Auction already closed.'})
-    new_contribution_txn = contract.functions.newOffer(result['id']).buildTransaction({
+    new_contribution_txn = contract.functions.newOffer(id).buildTransaction({
       'value': amount,
       'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
       'gasPrice': w3.eth.gas_price,
@@ -123,7 +124,7 @@ def contribute(request):
     pprint(dict(tx_receipt))
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
-  return JsonResponse({'result': 'ok'})
+  return JsonResponse({'result': tx_receipt})
 
 ###############################################################
 def get_pending_ended_auctions():

@@ -47,7 +47,7 @@ with open(compiled_contract_path) as file:
 contract = w3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 
 # set as default account as empty for safety reason
-w3.eth.default_account = '' # client.get("account").decode("utf-8")
+w3.eth.default_account = contract.address#w3.eth.accounts[0] # client.get("account").decode("utf-8")
 
 ################################# Methods
 

@@ -1,4 +1,5 @@
 ################################# Connect to redis server
+from xml.etree.ElementTree import tostring
 import redis
 redis_host = '127.0.0.1'
 client = redis.StrictRedis(host=redis_host, port=6379, password='',db=0)
@@ -7,8 +8,7 @@ try:
   client.client_list()
   print('CONNECTION TO REDIS OK')
 except:
-  print('CONNECTION TO REDIS SERVER FAILED.')
-  # sys.exit('No valid blockchain provided: exiting...')
+  sys.exit('CONNECTION TO REDIS SERVER FAILED: exiting...')
   
 
 ################################# Fetch deployed conract
@@ -17,7 +17,7 @@ from django.conf import settings
 BLOCKCHAIN = settings.BLOCKCHAIN
 if BLOCKCHAIN == 'ganache':
   blockchain_address = 'http://127.0.0.1:7545'
-  chain_id = 1337 # ganache
+  chain_id = 1337
 elif BLOCKCHAIN == 'ropsten':
   blockchain_address = 'https://ropsten.infura.io/v3/7340ba294b4f4b1da1ffdd1d23ef3022'
   chain_id = 3
@@ -27,17 +27,15 @@ else:
 from web3 import Web3
 w3 = Web3(Web3.HTTPProvider(blockchain_address))
 if not w3.isConnected():
-  print('BLOCKCHAIN NOT CONNECTED.')
-  # sys.exit('No valid blockchain provided: exiting...')
+  sys.exit('BLOCKCHAIN NOT CONNECTED: exiting...')
 else:
   print('CONNECTION TO WEB3 OK')
 
 # retrieve contract vars
 import json
-deployed_contract_address = ''
+deployed_contract_address = w3.toChecksumAddress("0xf9afeb0471114a544F1D5Ddf7DecA49f246B29e5")
 if not w3.isAddress(deployed_contract_address):
-  print('CONTRACT ADDRESS NOT VALID')
-  # sys.exit('No valid blockchain provided: exiting...')
+  sys.exit('CONTRACT ADDRESS NOT VALID: exiting...')
 else:
   print('CONTRACT ADDRESS OK')
 compiled_contract_path = 'truffle/build/Platform.json'

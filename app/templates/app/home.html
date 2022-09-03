@@ -33,7 +33,8 @@
     {% comment %} Show the request button only if authenticated {% endcomment %}
     {% if user.is_authenticated %}
 
-      <h1>Instructions</h1>
+      <h1>LIMITED EDITIONS ECO-SHOES AUCTIONS</h1>
+      <h2>Instructions</h2>
       <ul>
         <li>Connect to MetaMask before sending requests</li>
         <li>They will be not accept otherwise</li>
@@ -58,27 +59,48 @@
 
     {% endif %}
 
-    <h2>THESE ARE OUR OPEN AUCTIONS ON THE LIMITED EDITIONS ECO-SHOES</h2>
+    <h2>OPEN AUCTIONS</h2>
     <table class="table p-4 bg-white shadow rounded-lg">
       <thead>
         <tr>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> ID </th>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Beneficiary </th>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Description </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Starting price </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> For now </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Deadline (in weeks) </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Biggest offer </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Bidder </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Deadline (in hours) </th>
         </tr>
       </thead>
-      {% comment %} <tbody> {% for order in list_of_contracts %} <tr class="text-gray-700">
+      <tbody> {% for order in pending_auctions %}
+        <tr class="text-gray-700">
           <td class="border-b-2 p-4 dark:border-dark-5"> {{order.id}} </td>
-          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.buyer}} </td>
-          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.seller}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.beneficiary}} </td>
           <td class="border-b-2 p-4 dark:border-dark-5"> {{order.description}} </td>
-          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.amount}} </td>
-          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.amount_for_now}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.max_offer}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.bidder}} </td>
           <td class="border-b-2 p-4 dark:border-dark-5"> {{order.deadline}} </td>
-        </tr> {% endfor %} </tbody> {% endcomment %}
+        </tr> {% endfor %} 
+      </tbody>
+    </table>
+
+    <h2>PAST RESULTS</h2>
+    <table class="table p-4 bg-white shadow rounded-lg">
+      <thead>
+        <tr>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> ID </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Beneficiary </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Biggest price</th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Data </th>
+        </tr>
+      </thead>
+      <tbody> {% for order in ended_auctions %}
+        <tr class="text-gray-700">
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.id}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.beneficiary}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.max_offer}} </td>
+          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.deadline}} </td>
+        </tr> {% endfor %} 
+      </tbody>
     </table>
 
   {% endblock %}

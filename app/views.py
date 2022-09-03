@@ -57,6 +57,7 @@ import json
 import time
 from pprint import pprint
 from .forms import AuctionForm
+from .models import AuctionModelForm
 
 # the following decorator allows to avoid 403 forbidden error since post methods is unsafe
 from django.views.decorators.csrf import csrf_exempt
@@ -67,7 +68,7 @@ def test(request):
     result = json.loads(request.body)
     client.set("account", result['account'])
     # update default account
-    w3.eth.default_account = result['account']
+    w3.eth.default_account = w3.toChecksumAddress(result['account'])
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': result['account']})
@@ -76,26 +77,30 @@ def test(request):
 def new(request):
   try:
     result = json.loads(request.body)
-    if not (w3.eth.default_account==result['currentAccount']):
-      sys.exit('Account is not equal to the last stored: exiting...')
-    if result['amount'] <= 0:
+    if not (w3.eth.default_account==w3.toChecksumAddress(result['currentAccount'])):
+      sys.exit('Account is not equal to the last one stored: exiting...')
+    amount = Web3.toWei(int(result['amount']), 'ether')
+    if amount <= 0:
       return JsonResponse({'result': 'Amount must be greater than 0.'})
+    
     # vars are ok
     now = int(time.time()) # unix epoch
-    deadline = now + 24*3600
-    print(w3.eth.default_account, w3.eth.get_balance(w3.eth.default_account))
+    deadline = 60 # [s], set a fixed deadline of +24 hours
+    print('---------------------->CALLING CONTRACT FUNCTIONS')
     new_contract_txn = contract.functions.newAuction(
-      w3.eth.default_account, result['description'], result['amount'], deadline).buildTransaction({
+      w3.eth.default_account, result['description'], amount, deadline).buildTransaction({
       'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
       'gasPrice': w3.eth.gas_price,
       'chainId': chain_id
     })
-    tx_receipt = w3.eth.send_transaction(new_contract_txn)
-    print('Transaction receipt for new contract method:')
+    print('---------------------->SEND TRANSACTION')
+    tx_hash = w3.eth.send_transaction(new_contract_txn)
+    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    print('Transaction receipt for new auction method:')
     pprint(dict(tx_receipt))
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
-  return JsonResponse({'result': 'ok'})
+  return JsonResponse({'result': str(tx_hash.hex())})
 
 @csrf_exempt
 def contribute(request):

@@ -150,7 +150,8 @@ function makeAJAXRequest(s, type){
     data: s,
     success: function(data){
       //this gets called when server returns an OK response
-      console.log('it worked!');
+      // const obj = JSON.parse(data)
+      console.log(data['result']);
     },
     error: function(){
       console.log("it didnt work");

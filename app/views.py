@@ -121,34 +121,35 @@ def contribute(request):
   return JsonResponse({'result': 'ok'})
 
 ###############################################################
-def get_pending_auctions():
-  # acts = []
-  # # check if contract has been completed, and eventually make its status to 'closed'
-  # # closed contracts are not shown
-  # num_of_contracts = contract.functions.numContract_().call()
-  # for i in range(num_of_contracts):
-  #   t = contract.functions.getTitleDeed(i).call()
-  #   if t[6] is True:
-  #     record = NotaryModelForm.objects.filter(id=i).first()
-  #     if record is not None:
-  #       record.status = 'closed' # todo: this is redundant for already closed contracts
-  #   else:
-  #     acts.append({'id': i, 'buyer':t[0], 'seller':t[1], 'description':t[2],
-  #                'amount': t[3], 'amount_for_now': t[4],
-  #                'deadline':round((t[5]-time.time())/(7*24*3600))})
-  # return acts
-
-  output = []
-  return output
+def get_pending_ended_auctions():
+  pending = []
+  ended = []
+  # check if auction has been completed, and eventually make its status to 'closed'
+  num_of_contracts = contract.functions.numAuctions_().call()
+  for i in range(num_of_contracts):
+    t = contract.functions.getAuction(i).call()
+    if (t[5] is True) or (t[2]-time.time() < 0): # auction is completed/ended
+      record = AuctionModelForm.objects.filter(id=i).first()
+      if record is not None:
+        record.status = 'closed' # todo: this is redundant for already closed contracts
+      ended.append({'id':i, 'beneficiary':t[0], 'max_offer': t[3], 'deadline':t[4]})
+    else:
+      print('------------------')
+      print(t[2]-time.time())
+      print('------------------')
+      pending.append({'id':i, 'beneficiary':t[0], 'description':t[1], 'max_offer':t[3], 'bidder':t[4],
+                      'deadline':round((t[2]-time.time()))}) # deadline in seconds
+  return pending, ended
 
 ###############################################################
 def homepage(request):
   print('################## PYTHON ###################')
   form = AuctionForm()
   
-  pending_auctions = get_pending_auctions()
+  pending_auctions, ended_auctions = get_pending_ended_auctions()
   context = {
     "pending_auctions": pending_auctions,
+    "ended_auctions": ended_auctions,
     "form": form
   }
   return render(request=request, template_name='app/home.html', context=context)

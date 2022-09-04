@@ -58,6 +58,7 @@ import time
 from pprint import pprint
 from .forms import AuctionForm
 from .models import AuctionModelForm
+import hashlib
 
 # the following decorator allows to avoid 403 forbidden error since post methods is unsafe
 from django.views.decorators.csrf import csrf_exempt
@@ -73,6 +74,34 @@ def test(request):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': result['account']})
 
+def saveNewAuction2SQLite():
+  # get the latest crated
+  num_of_auctions = contract.functions.numAuctions_().call()
+  auction = contract.functions.getAuction(num_of_auctions-1).call()
+  record = AuctionModelForm.objects.create(
+    type = 'new', # redundant
+    id = num_of_auctions-1,
+    beneficiary = auction[0],
+    description = auction[1],
+    amount = auction[2],
+    biggest_for_now = auction[2], # at the beginning the highest bidder is the beneficiary
+    highest_bidder = auction[0],
+    status = 'pending'
+  )
+  record.save()
+  return
+
+def updateEndedAuction2SQLite(auction, id):
+  #update ended auction saved in relational db
+  record = AuctionModelForm.objects.filter(id=id).first()
+  if record is None:
+    sys.exit('Record not found: exiting...')
+  record.biggest_for_now = auction[3]
+  record.highest_bidder = auction[4]
+  record.status = 'closed'
+  record.save()
+  return
+
 @csrf_exempt
 def new(request):
   try:
@@ -84,7 +113,6 @@ def new(request):
       return JsonResponse({'result': 'Amount must be greater than 0.'})
     
     # vars are ok
-    now = int(time.time()) # unix epoch
     deadline = 60 # [s], set a fixed deadline of +24 hours
     print('---------------------->CALLING CONTRACT FUNCTIONS')
     new_contract_txn = contract.functions.newAuction(
@@ -98,9 +126,39 @@ def new(request):
     tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     print('Transaction receipt for new auction method:')
     pprint(dict(tx_receipt))
+    saveNewAuction2SQLite()
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': str(tx_hash.hex())})
+
+def send_end_auction_signal(id, auction):
+  # Data to be written
+  dictionary = {
+    "id": id,
+    "beneficiary": auction[0],
+    "description": auction[1],
+    "deadline": auction[2],
+    "highestBid": auction[3],
+    "highestBidder": auction[4],
+    "completed": "true"
+  }
+  # Serializing json (from django-redis-project)
+  jsoncontent = JsonResponse(dictionary, safe=False)
+  # Create the hash
+  hash = str(hashlib.sha256(jsoncontent.content).hexdigest())
+  # Create transaction
+  end_auction_txn = contract.functions.auctionEnd(id, hash).buildTransaction({
+    'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
+    'gasPrice': w3.eth.gas_price,
+    'chainId': chain_id
+  })
+  # Send transaction
+  tx_receipt = w3.eth.send_transaction(end_auction_txn)
+  print('Transaction receipt for end auction method:')
+  pprint(dict(tx_receipt))
+  # As requested, sve in relational databse the result
+  updateEndedAuction2SQLite(auction, id)
+  return
 
 @csrf_exempt
 def contribute(request):
@@ -111,7 +169,14 @@ def contribute(request):
     id = int(result['id'])
     t = contract.functions.getAuction(id).call()
     print(id, amount, t)
-    if t[5] is True: 
+    # if already closed or time is expired
+    if (t[5] is True) or (t[2]-time.time() < 0): 
+      record = AuctionModelForm.objects.filter(id=i).first()
+      if record is not None:
+        record.status = 'closed' # todo: this is redundant for already closed contracts
+      # if time is over, call ending fucntion (only if auction is not yet labeled as ended)
+      if (t[2]-time.time() < 0) and (t[5] is False):
+        send_end_auction_signal(id, t)
       return JsonResponse({'result': 'Auction already closed.'})
     new_contribution_txn = contract.functions.newOffer(id).buildTransaction({
       'value': amount,
@@ -120,31 +185,38 @@ def contribute(request):
       'chainId': chain_id
     })
     tx_receipt = w3.eth.send_transaction(new_contribution_txn)
-    print('Transaction receipt for new contract method:')
+    print('Transaction receipt for new auction method:')
     pprint(dict(tx_receipt))
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
   return JsonResponse({'result': tx_receipt})
 
 ###############################################################
+
+  
 def get_pending_ended_auctions():
   pending = []
   ended = []
   # check if auction has been completed, and eventually make its status to 'closed'
-  num_of_contracts = contract.functions.numAuctions_().call()
-  for i in range(num_of_contracts):
+  num_of_auctions = contract.functions.numAuctions_().call()
+  # for each auction
+  for i in range(num_of_auctions):
     t = contract.functions.getAuction(i).call()
-    if (t[5] is True) or (t[2]-time.time() < 0): # auction is completed/ended
+    # transform time in readable date
+    date = time.ctime(float(t[2]))
+    # if already closed or time is expired
+    if (t[5] is True) or (t[2]-time.time() < 0):
       record = AuctionModelForm.objects.filter(id=i).first()
       if record is not None:
         record.status = 'closed' # todo: this is redundant for already closed contracts
-      ended.append({'id':i, 'beneficiary':t[0], 'max_offer': t[3], 'deadline':t[4]})
+      # take info directly from blockchain
+      ended.append({'id':i, 'beneficiary':t[0], 'max_offer': t[3], 'deadline':date})
+      # if time is over, call ending fucntion (only if auction is not yet labeled as ended)
+      if (t[2]-time.time() < 0) and (t[5] is False):
+        send_end_auction_signal(i, t)
     else:
-      print('------------------')
-      print(t[2]-time.time())
-      print('------------------')
       pending.append({'id':i, 'beneficiary':t[0], 'description':t[1], 'max_offer':t[3], 'bidder':t[4],
-                      'deadline':round((t[2]-time.time()))}) # deadline in seconds
+                      'deadline':date})
   return pending, ended
 
 ###############################################################

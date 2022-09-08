@@ -15,8 +15,8 @@ contract TestPlatform {
   uint public initialBalance = 1 ether; // or any other value
   uint amount = 1 gwei;
   uint deadline = 24 hours;
-  address payable auctioneer = payable(address(0x2cB5ecA49f415a730410a94907373b2330D2cfBC));
-  address payable beneficiary = payable(address(0x38773F6e467C15CF7D1CC8BF3D8F971a867Fa82C));
+  address payable auctioneer = payable(address(0xa63F5198E5b5C16EbCF1927Cc491929374c588Cd));
+  address payable beneficiary = payable(address(0x6EC9677a7773a2Aa6c695FD724541F881b9Cd514));
 
   event Balance(address indexed from, uint amount);
   event User(address user);
@@ -24,6 +24,8 @@ contract TestPlatform {
   ////////////////////////////////////////////////////////////////
   function testInitialVarsUsingDeployedContract() public {
     Assert.equal(p.numAuctions_(), 0, "At the beginning num of auctions must be 0.");
+    emit User(p.governor());
+    emit User(auctioneer);
     Assert.equal(p.governor(), auctioneer, "Governor and auciotneer do not coincide.");
     Assert.isTrue(p.isAuctioneer(p.governor()), "Governor is not auciotneer.");
   }
@@ -56,11 +58,11 @@ contract TestPlatform {
     p.auctionEnd(0,"0x000000000");
     emit Balance(address(this), address(this).balance);
     emit Balance(beneficiary, beneficiary.balance);
-
     Assert.isTrue(p.getAuction(0).completed, "Auction not completed.");
     Assert.equal(p.numReceipts_(), uint(1), "Wrong number of receipts.");
     Assert.equal(p.receipts_(0), "0x000000000", "Wrong hash");
     Assert.equal(beneficiary.balance, uint(amount_for_now + 2 gwei), "Wrong balance.");
+    Assert.equal(beneficiary, p.getAuction(0).beneficiary, "Beneficiary is not beneficiary");
   }
 
 }

@@ -121,7 +121,11 @@ contract Platform is Auctioneer {
 
     // Transfer
     auctions_[auctionID].completed = true;
-    auctions_[auctionID].beneficiary.transfer(auctions_[auctionID].highestBid);
+    // if the auction as no received enough money wrt the starting price, do nothing
+    if(auctions_[auctionID].highestBidder != auctions_[auctionID].beneficiary){
+      uint amountFunded = auctions_[auctionID].highestBid;
+      auctions_[auctionID].beneficiary.transfer(amountFunded);
+    }
 
     // Store hash
     receipts_[auctionID] = hash;

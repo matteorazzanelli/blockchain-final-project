@@ -33,7 +33,7 @@ else:
 
 # retrieve contract vars
 import json
-deployed_contract_address = w3.toChecksumAddress("0xf9afeb0471114a544F1D5Ddf7DecA49f246B29e5")
+deployed_contract_address = w3.toChecksumAddress("0x54b9B6D9b029786Cdc8Ec43119eCedA7756bE021")
 if not w3.isAddress(deployed_contract_address):
   sys.exit('CONTRACT ADDRESS NOT VALID: exiting...')
 else:
@@ -47,7 +47,12 @@ with open(compiled_contract_path) as file:
 contract = w3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 
 # set as default account as empty for safety reason
-w3.eth.default_account = contract.address#w3.eth.accounts[0] # client.get("account").decode("utf-8")
+w3.eth.default_account = w3.eth.accounts[0]
+# w3.toChecksumAddress(client.get("account").decode("utf-8"))
+# "0x38773F6e467C15CF7D1CC8BF3D8F971a867Fa82C"
+# contract.address
+# w3.eth.accounts[0]
+print('ACCOUNT : ', w3.eth.default_account)
 
 ################################# Methods
 
@@ -83,8 +88,9 @@ def saveNewAuction2SQLite():
     id = num_of_auctions-1,
     beneficiary = auction[0],
     description = auction[1],
-    amount = auction[2],
-    biggest_for_now = auction[2], # at the beginning the highest bidder is the beneficiary
+    deadline = auction[2],
+    amount = auction[3],
+    biggest_for_now = auction[3], # at the beginning the highest bidder is the beneficiary
     highest_bidder = auction[0],
     status = 'pending'
   )
@@ -114,14 +120,12 @@ def new(request):
     
     # vars are ok
     deadline = 60 # [s], set a fixed deadline of +24 hours
-    print('---------------------->CALLING CONTRACT FUNCTIONS')
     new_contract_txn = contract.functions.newAuction(
       w3.eth.default_account, result['description'], amount, deadline).buildTransaction({
       'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
       'gasPrice': w3.eth.gas_price,
       'chainId': chain_id
     })
-    print('---------------------->SEND TRANSACTION')
     tx_hash = w3.eth.send_transaction(new_contract_txn)
     tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     print('Transaction receipt for new auction method:')
@@ -140,23 +144,24 @@ def send_end_auction_signal(id, auction):
     "deadline": auction[2],
     "highestBid": auction[3],
     "highestBidder": auction[4],
-    "completed": "true"
+    "completed": True
   }
   # Serializing json (from django-redis-project)
   jsoncontent = JsonResponse(dictionary, safe=False)
   # Create the hash
   hash = str(hashlib.sha256(jsoncontent.content).hexdigest())
   # Create transaction
-  end_auction_txn = contract.functions.auctionEnd(id, hash).buildTransaction({
+  end_auction_txn = contract.functions.auctionEnd(int(id), hash).build_transaction({
     'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
     'gasPrice': w3.eth.gas_price,
-    'chainId': chain_id
+    'chainId': chain_id,
   })
   # Send transaction
-  tx_receipt = w3.eth.send_transaction(end_auction_txn)
+  tx_hash = w3.eth.send_transaction(end_auction_txn)
+  tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
   print('Transaction receipt for end auction method:')
   pprint(dict(tx_receipt))
-  # As requested, sve in relational databse the result
+  # As requested, save in relational databse the result
   updateEndedAuction2SQLite(auction, id)
   return
 
@@ -192,8 +197,7 @@ def contribute(request):
   return JsonResponse({'result': tx_receipt})
 
 ###############################################################
-
-  
+ 
 def get_pending_ended_auctions():
   pending = []
   ended = []
@@ -209,10 +213,13 @@ def get_pending_ended_auctions():
       record = AuctionModelForm.objects.filter(id=i).first()
       if record is not None:
         record.status = 'closed' # todo: this is redundant for already closed contracts
+        print('closed in django')
       # take info directly from blockchain
       ended.append({'id':i, 'beneficiary':t[0], 'max_offer': t[3], 'deadline':date})
       # if time is over, call ending fucntion (only if auction is not yet labeled as ended)
       if (t[2]-time.time() < 0) and (t[5] is False):
+        print(i)
+        print(t)
         send_end_auction_signal(i, t)
     else:
       pending.append({'id':i, 'beneficiary':t[0], 'description':t[1], 'max_offer':t[3], 'bidder':t[4],
@@ -223,8 +230,12 @@ def get_pending_ended_auctions():
 def homepage(request):
   print('################## PYTHON ###################')
   form = AuctionForm()
-  
-  pending_auctions, ended_auctions = get_pending_ended_auctions()
+  if w3.isAddress(w3.eth.default_account):
+    print('Using default : ', w3.eth.default_account)
+    pending_auctions, ended_auctions = get_pending_ended_auctions()
+  else:
+    print('Empty')
+    pending_auctions = ended_auctions = []
   context = {
     "pending_auctions": pending_auctions,
     "ended_auctions": ended_auctions,

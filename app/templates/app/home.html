@@ -67,8 +67,7 @@
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Beneficiary </th>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Description </th>
           <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Biggest offer </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Bidder </th>
-          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Deadline (in hours) </th>
+          <th class="border-b-2 p-4 dark:border-dark-5 whitespace-nowrap font-normal text-blue-600"> Deadline </th>
         </tr>
       </thead>
       <tbody> {% for order in pending_auctions %}
@@ -77,7 +76,6 @@
           <td class="border-b-2 p-4 dark:border-dark-5"> {{order.beneficiary}} </td>
           <td class="border-b-2 p-4 dark:border-dark-5"> {{order.description}} </td>
           <td class="border-b-2 p-4 dark:border-dark-5"> {{order.max_offer}} </td>
-          <td class="border-b-2 p-4 dark:border-dark-5"> {{order.bidder}} </td>
           <td class="border-b-2 p-4 dark:border-dark-5"> {{order.deadline}} </td>
         </tr> {% endfor %} 
       </tbody>

@@ -138,6 +138,7 @@ function sendRequest(){
   if(type=='new' || type=='contribute'){
     makeAJAXRequest(s, type)
   }
+  window.location.reload()
 }
 
 function makeAJAXRequest(s, type){
@@ -150,7 +151,6 @@ function makeAJAXRequest(s, type){
     data: s,
     success: function(data){
       //this gets called when server returns an OK response
-      // const obj = JSON.parse(data)
       console.log(data['result']);
     },
     error: function(){

@@ -46,7 +46,7 @@ with open(compiled_contract_path) as file:
 # create contract instance
 contract = w3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 
-# set as default account as empty for safety reason
+# set the default account
 w3.eth.default_account = w3.eth.accounts[0]
 # w3.toChecksumAddress(client.get("account").decode("utf-8"))
 # "0x38773F6e467C15CF7D1CC8BF3D8F971a867Fa82C"
@@ -108,33 +108,6 @@ def updateEndedAuction2SQLite(auction, id):
   record.save()
   return
 
-@csrf_exempt
-def new(request):
-  try:
-    result = json.loads(request.body)
-    if not (w3.eth.default_account==w3.toChecksumAddress(result['currentAccount'])):
-      sys.exit('Account is not equal to the last one stored: exiting...')
-    amount = Web3.toWei(int(result['amount']), 'ether')
-    if amount <= 0:
-      return JsonResponse({'result': 'Amount must be greater than 0.'})
-    
-    # vars are ok
-    deadline = 60 # [s], set a fixed deadline of +24 hours
-    new_contract_txn = contract.functions.newAuction(
-      w3.eth.default_account, result['description'], amount, deadline).buildTransaction({
-      'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
-      'gasPrice': w3.eth.gas_price,
-      'chainId': chain_id
-    })
-    tx_hash = w3.eth.send_transaction(new_contract_txn)
-    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    print('Transaction receipt for new auction method:')
-    pprint(dict(tx_receipt))
-    saveNewAuction2SQLite()
-  except (ValueError, KeyError):
-    raise ValueError('Invalid POST parameters')
-  return JsonResponse({'result': str(tx_hash.hex())})
-
 def send_end_auction_signal(id, auction):
   # Data to be written
   dictionary = {
@@ -165,6 +138,40 @@ def send_end_auction_signal(id, auction):
   updateEndedAuction2SQLite(auction, id)
   return
 
+def saveBestBetRedis(id, auction, amount):
+  client.set(str(id), amount)
+  return
+
+#################################
+
+@csrf_exempt
+def new(request):
+  try:
+    result = json.loads(request.body)
+    if not (w3.eth.default_account==w3.toChecksumAddress(result['currentAccount'])):
+      sys.exit('Account is not equal to the last one stored: exiting...')
+    amount = Web3.toWei(int(result['amount']), 'ether')
+    if amount <= 0:
+      return JsonResponse({'result': 'Amount must be greater than 0.'})
+    
+    # vars are ok
+    deadline = 60*60*24 # [s], set a fixed deadline of +24 hours
+    new_contract_txn = contract.functions.newAuction(
+      w3.eth.default_account, result['description'], amount, deadline).buildTransaction({
+      'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
+      'gasPrice': w3.eth.gas_price,
+      'chainId': chain_id
+    })
+    tx_hash = w3.eth.send_transaction(new_contract_txn)
+    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    print('Transaction receipt for new auction method:')
+    pprint(dict(tx_receipt))
+    saveNewAuction2SQLite()
+  except (ValueError, KeyError):
+    raise ValueError('Invalid POST parameters')
+  return JsonResponse({'result': str(tx_hash.hex())})
+
+
 @csrf_exempt
 def contribute(request):
   try:
@@ -172,29 +179,34 @@ def contribute(request):
     result = json.loads(request.body)
     amount = Web3.toWei(int(result['amount']), 'ether')
     id = int(result['id'])
+    num_of_auctions = contract.functions.numAuctions_().call()
+    if (id > num_of_auctions-1):
+      return JsonResponse({'result': 'auction does not exist'})
     t = contract.functions.getAuction(id).call()
     print(id, amount, t)
     # if already closed or time is expired
-    if (t[5] is True) or (t[2]-time.time() < 0): 
-      record = AuctionModelForm.objects.filter(id=i).first()
-      if record is not None:
-        record.status = 'closed' # todo: this is redundant for already closed contracts
-      # if time is over, call ending fucntion (only if auction is not yet labeled as ended)
-      if (t[2]-time.time() < 0) and (t[5] is False):
-        send_end_auction_signal(id, t)
-      return JsonResponse({'result': 'Auction already closed.'})
-    new_contribution_txn = contract.functions.newOffer(id).buildTransaction({
-      'value': amount,
-      'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
-      'gasPrice': w3.eth.gas_price,
-      'chainId': chain_id
-    })
-    tx_receipt = w3.eth.send_transaction(new_contribution_txn)
-    print('Transaction receipt for new auction method:')
-    pprint(dict(tx_receipt))
+    if (t[5] is True) or (t[2]-time.time() < 0) or (): 
+      return JsonResponse({'result': 'time expired'})
+    # check if it is the best offer
+    tx_receipt = []
+    if (t[3] < amount):
+      new_contribution_txn = contract.functions.newOffer(id).buildTransaction({
+        'value': amount,
+        'nonce': w3.eth.getTransactionCount(w3.eth.default_account),
+        'gasPrice': w3.eth.gas_price,
+        'chainId': chain_id
+      })
+      tx_hash = w3.eth.send_transaction(new_contribution_txn)
+      tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+      print('Transaction receipt for new auction method:')
+      pprint(dict(tx_receipt))
+      # save it in redis
+      saveBestBetRedis(id, t, amount)
+    else:
+      return JsonResponse({'result': 'not the best offer'})
   except (ValueError, KeyError):
     raise ValueError('Invalid POST parameters')
-  return JsonResponse({'result': tx_receipt})
+  return JsonResponse({'result': str(tx_hash.hex())})
 
 ###############################################################
  
@@ -218,8 +230,6 @@ def get_pending_ended_auctions():
       ended.append({'id':i, 'beneficiary':t[0], 'max_offer': t[3], 'deadline':date})
       # if time is over, call ending fucntion (only if auction is not yet labeled as ended)
       if (t[2]-time.time() < 0) and (t[5] is False):
-        print(i)
-        print(t)
         send_end_auction_signal(i, t)
     else:
       pending.append({'id':i, 'beneficiary':t[0], 'description':t[1], 'max_offer':t[3], 'bidder':t[4],
